@@ -2147,7 +2147,7 @@ Unlike the LLM-as-judge evaluators above, this evaluator does not call a model i
 Labels are matched case-insensitively against `positive_labels`/`negative_labels`, which default to `good`/`pass`/`true`/`1` (positive) and `bad`/`fail`/`false`/`0` (negative). You can pass your own lists to support custom buckets.
 
 ```python
-from openevals.binary_classifier import create_binary_classifier_evaluator
+from openevals import create_binary_classifier_evaluator
 
 def my_classifier(*, inputs, outputs, reference_outputs, **kwargs):
     # Any rule, heuristic, or model call you like

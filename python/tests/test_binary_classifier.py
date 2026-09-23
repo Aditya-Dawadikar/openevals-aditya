@@ -76,6 +76,30 @@ def test_binary_classifier_unrecognized_label_raises():
 
 
 @pytest.mark.langsmith
+def test_binary_classifier_overlapping_labels_raises_at_creation():
+    with pytest.raises(ValueError):
+        create_binary_classifier_evaluator(
+            classifier=lambda **kwargs: "good",
+            positive_labels=["good", "ambiguous"],
+            negative_labels=["bad", "AMBIGUOUS"],
+        )
+
+
+@pytest.mark.langsmith
+def test_binary_classifier_does_not_call_classifier_until_invoked():
+    calls = []
+
+    def classifier(**kwargs):
+        calls.append(1)
+        return "good"
+
+    evaluator = create_binary_classifier_evaluator(classifier=classifier)
+    assert calls == []
+    evaluator(outputs="anything")
+    assert calls == [1]
+
+
+@pytest.mark.langsmith
 def test_binary_classifier_receives_inputs_outputs_reference_outputs():
     received = {}
 

@@ -36,6 +36,19 @@ def _normalize_label(
     )
 
 
+def _validate_disjoint_labels(
+    positive_labels: list[Any], negative_labels: list[Any]
+) -> None:
+    normalized_positive = {str(item).strip().lower() for item in positive_labels}
+    normalized_negative = {str(item).strip().lower() for item in negative_labels}
+    overlap = normalized_positive & normalized_negative
+    if overlap:
+        raise ValueError(
+            f"`positive_labels` and `negative_labels` overlap: {sorted(overlap)}. "
+            "Each label must be classified as either positive or negative, not both."
+        )
+
+
 def create_binary_classifier_evaluator(
     *,
     classifier: Callable[..., Any],
@@ -86,6 +99,7 @@ def create_binary_classifier_evaluator(
     negative = (
         negative_labels if negative_labels is not None else _DEFAULT_NEGATIVE_LABELS
     )
+    _validate_disjoint_labels(positive, negative)
 
     def wrapped_evaluator(
         *,
@@ -94,14 +108,13 @@ def create_binary_classifier_evaluator(
         reference_outputs: Any | None = None,
         **kwargs: Any,
     ) -> EvaluatorResult:
-        raw_label = classifier(
-            inputs=inputs,
-            outputs=outputs,
-            reference_outputs=reference_outputs,
-            **kwargs,
-        )
-
         def get_score():
+            raw_label = classifier(
+                inputs=inputs,
+                outputs=outputs,
+                reference_outputs=reference_outputs,
+                **kwargs,
+            )
             score = _normalize_label(raw_label, positive, negative)
             return (score, f"Classified as {raw_label}.")
 
@@ -152,6 +165,7 @@ def create_async_binary_classifier_evaluator(
     negative = (
         negative_labels if negative_labels is not None else _DEFAULT_NEGATIVE_LABELS
     )
+    _validate_disjoint_labels(positive, negative)
 
     async def wrapped_evaluator(
         *,
@@ -160,16 +174,15 @@ def create_async_binary_classifier_evaluator(
         reference_outputs: Any | None = None,
         **kwargs: Any,
     ) -> EvaluatorResult:
-        raw_label = classifier(
-            inputs=inputs,
-            outputs=outputs,
-            reference_outputs=reference_outputs,
-            **kwargs,
-        )
-        if inspect.isawaitable(raw_label):
-            raw_label = await raw_label
-
         async def get_score():
+            raw_label = classifier(
+                inputs=inputs,
+                outputs=outputs,
+                reference_outputs=reference_outputs,
+                **kwargs,
+            )
+            if inspect.isawaitable(raw_label):
+                raw_label = await raw_label
             score = _normalize_label(raw_label, positive, negative)
             return (score, f"Classified as {raw_label}.")
 
